@@ -1,0 +1,12 @@
+name = "cyber-mokugyo-api"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+
+[observability]
+enabled = true
+
+# 部署前由 scripts/deploy.sh 填入真实 D1 database_id
+[[d1_databases]]
+binding = "DB"
+database_name = "cyber-mokugyo"
+database_id = "REPLACE_AT_DEPLOY_TIME"
