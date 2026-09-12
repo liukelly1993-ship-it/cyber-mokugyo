@@ -31,13 +31,13 @@ jobs:
       - name: Patch wrangler.toml with real DB id
         run: sed -i.bak 's/database_id = "REPLACE_AT_DEPLOY_TIME"/database_id = "10175718-c20a-4ac3-8641-3daa1d2e2a77"/' wrangler.toml && rm -f wrangler.toml.bak && grep database_id wrangler.toml
 
-      - name: Delete smoke test user and related rows
+      - name: Delete smoke and test users and related rows
         run: |
           SQL="
-          DELETE FROM daily WHERE user_id IN (SELECT id FROM users WHERE username='smoke1');
-          DELETE FROM events WHERE user_id IN (SELECT id FROM users WHERE username='smoke1');
-          DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE username='smoke1');
-          DELETE FROM users WHERE username='smoke1';
-          SELECT 'remaining smoke1' AS check_, COUNT(*) AS n FROM users WHERE username='smoke1';
+          DELETE FROM daily WHERE user_id IN (SELECT id FROM users WHERE username IN ('smoke1','sync_test'));
+          DELETE FROM events WHERE user_id IN (SELECT id FROM users WHERE username IN ('smoke1','sync_test'));
+          DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE username IN ('smoke1','sync_test'));
+          DELETE FROM users WHERE username IN ('smoke1','sync_test');
+          SELECT username, COUNT(*) AS n FROM users WHERE username IN ('smoke1','sync_test') GROUP BY username;
           "
           npx wrangler@3 d1 execute cyber-mokugyo --remote --command="$SQL"
