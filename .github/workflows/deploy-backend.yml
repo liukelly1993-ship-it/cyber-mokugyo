@@ -42,17 +42,17 @@ jobs:
           DB_ID=""
           CREATE_OUT=$(npx wrangler d1 create cyber-mokugyo 2>&1) || CREATE_OUT=""
           echo "wrangler create output: $CREATE_OUT"
-          DB_ID=$(echo "$CREATE_OUT" | grep -oE '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}' | head -1 || true)
+          DB_ID=$(printf '%s\n' "$CREATE_OUT" | grep -oE '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}' | head -1 || true)
           if [ -z "$DB_ID" ]; then
             echo "create didn't return an ID, listing existing databases..."
             LIST_OUT=$(npx wrangler d1 list --json 2>&1) || LIST_OUT=""
-            echo "wrangler list output (first 500 chars): $(echo "$LIST_OUT" | head -c 500)"
-            DB_ID=$(echo "$LIST_OUT" | python3 -c "import json,sys
+            echo "wrangler list output (first 500 chars): $(printf '%s' "$LIST_OUT" | head -c 500)"
+            DB_ID=$(printf '%s' "$LIST_OUT" | python3 -c "import json,sys
 try:
     data=json.load(sys.stdin)
     print(next((d['id'] for d in data if d.get('name')=='cyber-mokugyo'), ''))
 except Exception as e:
-    print('', file=sys.stderr); print(e, file=sys.stderr)" 2>/dev/null || true)
+    pass" 2>/dev/null || true)
           fi
           if [ -z "$DB_ID" ]; then
             echo "::error::Failed to resolve a D1 ID for cyber-mokugyo"
