@@ -28,6 +28,13 @@ if [ -z "$DB_ID" ]; then
   echo "::error::Failed to resolve a D1 ID for cyber-mokugyo"
   echo "create output was:"
   echo "$CREATE_OUT"
+  if printf '%s' "$CREATE_OUT" | grep -qi "Authentication error"; then
+    echo ""
+    echo "::notice::Token likely missing D1:Edit permission."
+    echo "::notice::Create a custom token at https://dash.cloudflare.com/profile/api-tokens"
+    echo "::notice::Required: Account > D1:Edit + Workers Scripts:Edit + Account Settings:Read"
+    echo "::notice::The 'Edit Cloudflare Workers' template alone does NOT grant D1 access."
+  fi
   exit 1
 fi
 
