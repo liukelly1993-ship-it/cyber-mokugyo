@@ -23,6 +23,7 @@ jobs:
 
       - name: Delete smoke test user and related rows
         run: |
+          DB_ID="10175718-c20a-4ac3-8641-3daa1d2e2a77"
           SQL="
           DELETE FROM daily WHERE user_id IN (SELECT id FROM users WHERE username='smoke1');
           DELETE FROM events WHERE user_id IN (SELECT id FROM users WHERE username='smoke1');
@@ -30,4 +31,4 @@ jobs:
           DELETE FROM users WHERE username='smoke1';
           SELECT 'remaining smoke1' AS check_, COUNT(*) AS n FROM users WHERE username='smoke1';
           "
-          npx wrangler d1 execute cyber-mokugyo --remote --command="$SQL"
+          npx wrangler d1 execute cyber-mokugyo --remote --database-id "$DB_ID" --command="$SQL"
