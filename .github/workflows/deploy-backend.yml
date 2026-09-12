@@ -41,14 +41,7 @@ jobs:
         run: bash scripts/ci-d1.sh
 
       - name: Apply schema migrations
-        run: |
-          CHECK=$(npx wrangler d1 execute cyber-mokugyo --remote --json --command "SELECT name FROM sqlite_master WHERE type='table' AND name='users'" 2>/dev/null || true)
-          if printf '%s' "$CHECK" | grep -q '"name":"users"'; then
-            echo "Schema already applied — skipping migration"
-          else
-            echo "Applying schema for the first time"
-            npx wrangler d1 execute cyber-mokugyo --remote --file=drizzle/0000_amusing_kat_farrell.sql
-          fi
+        run: npx wrangler d1 execute cyber-mokugyo --remote --file=drizzle/0000_initial.sql
 
       - name: Run backend tests
         run: npm test

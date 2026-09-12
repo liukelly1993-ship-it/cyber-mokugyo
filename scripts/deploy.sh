@@ -66,7 +66,7 @@ rm -f wrangler.toml.bak
 
 # 3. 应用迁移
 echo "▶ 应用数据库 schema"
-npx wrangler d1 execute cyber-mokugyo --remote --file=drizzle/0000_amusing_kat_farrell.sql >/dev/null
+npx wrangler d1 execute cyber-mokugyo --remote --file=drizzle/0000_initial.sql >/dev/null
 echo "  ✓"
 
 # 4. 部署 Worker
