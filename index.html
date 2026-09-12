@@ -43,7 +43,7 @@ $('reset').onclick=()=>{open('开启新的一页').innerHTML='<p class="explain"
 for(let i=0;i<12;i++){const p=document.createElement('i');p.className='particle';p.style.cssText=`left:${8+Math.random()*84}%;top:${10+Math.random()*80}%;animation-delay:-${Math.random()*8}s`;$('scene').append(p);}render();save();setInterval(()=>{if(state.date!==day())render();},1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)render();});
 if(document.modelContext?.registerTool){try{Promise.resolve(document.modelContext.registerTool({name:'read_muyu_progress',description:'读取当前木鱼敲击次数与累计正向属性。',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute(input){if(!input||typeof input!=='object'||Object.keys(input).length)throw new Error('请传入空对象');rollover();return{today:state.today,total:state.total,attributes:{...state.attrs}};}})).catch(()=>{});}catch{}}
 // 账号与云端榜单独立于原有本地属性存档。
-const API='https://cyber-mokugyo-api.liukelly1993.chatgpt.site/api';
+const API='https://cyber-mokugyo-api.liukelly1993.workers.dev/api';
 let session=null,cloudUser=null,cloudBusy=false,draft=null,cloudError='',authMode='login',boardPeriod='today',boardRequest=0;
 const memoryQueue=new Map();
 try{session=JSON.parse(sessionStorage.getItem('muyu-session-v1'));}catch{}

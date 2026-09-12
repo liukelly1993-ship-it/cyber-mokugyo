@@ -73,7 +73,7 @@ echo "  ✓"
 echo "▶ 部署 Worker"
 DEPLOY_OUT=$(npx wrangler deploy 2>&1)
 WORKER_URL=$(printf '%s\n' "$DEPLOY_OUT" \
-  | grep -oE 'https://[a-z0-9-]+\.workers\.dev' \
+  | grep -oE 'https://[a-z0-9.-]+\.workers\.dev' \
   | head -1)
 
 echo "$DEPLOY_OUT" | grep -E 'Deployed|workers\.dev|error|✗' || true
@@ -91,10 +91,8 @@ API Base   : $WORKER_URL/api
 D1 ID      : $DB_ID
 
 接下来:把仓库根目录 index.html 里的
-  const API='https://cyber-mokugyo-api.liukelly1993.chatgpt.site/api';
-改为
-  const API='${WORKER_URL}/api';
-然后 git add index.html && git commit -m "chore: 切换 API URL" && git push origin main
-GitHub Pages 会在 ~1 分钟内自动发布,PR #1 的 workflow 会再次跑(无害)。
+  const API='https://cyber-mokugyo-api.liukelly1993.workers.dev/api';
+与上面的 Worker URL 一致即可。然后 git add index.html && git commit -m "chore: 切换 API URL" && git push origin main
+GitHub Pages 会在 ~1 分钟内自动发布,workflow 会再次跑(无害)。
 ================================
 EOF
