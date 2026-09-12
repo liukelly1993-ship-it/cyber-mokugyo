@@ -28,6 +28,9 @@ jobs:
       - name: Install wrangler 3.x locally
         run: npm install --no-audit --no-fund wrangler@^3.90.0
 
+      - name: Patch wrangler.toml with real DB id
+        run: sed -i.bak 's/database_id = "REPLACE_AT_DEPLOY_TIME"/database_id = "10175718-c20a-4ac3-8641-3daa1d2e2a77"/' wrangler.toml && rm -f wrangler.toml.bak && grep database_id wrangler.toml
+
       - name: Delete smoke test user and related rows
         run: |
           SQL="
