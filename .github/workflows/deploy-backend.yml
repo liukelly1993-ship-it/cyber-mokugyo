@@ -56,7 +56,7 @@ jobs:
           echo "GET $URL"
           RESP=$(curl -fsSL -H "Origin: https://liukelly1993-ship-it.github.io" "$URL")
           echo "$RESP"
-          echo "$RESP" | grep -qF ok:true
+          echo "$RESP" | grep -qF '"ok":true'
 
       - name: Notify deploy result
         if: always()
