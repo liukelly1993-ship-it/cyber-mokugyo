@@ -39,22 +39,28 @@ jobs:
       - name: Ensure D1 database exists
         id: d1
         run: |
-          set -euo pipefail
-          CREATE_OUT=$(npx wrangler d1 create cyber-mokugyo 2>&1) || true
-          DB_ID=$(printf '%s\n' "$CREATE_OUT" \
-            | grep -oE '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}' \
-            | head -1)
+          DB_ID=""
+          CREATE_OUT=$(npx wrangler d1 create cyber-mokugyo 2>&1) || CREATE_OUT=""
+          echo "wrangler create output: $CREATE_OUT"
+          DB_ID=$(echo "$CREATE_OUT" | grep -oE '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}' | head -1 || true)
           if [ -z "$DB_ID" ]; then
-            LIST_OUT=$(npx wrangler d1 list --json 2>&1)
-            DB_ID=$(printf '%s\n' "$LIST_OUT" \
-              | python3 -c "import json,sys; data=json.load(sys.stdin); print(next((d['id'] for d in data if d.get('name')=='cyber-mokugyo'), ''))" \
-              2>/dev/null || true)
+            echo "create didn't return an ID, listing existing databases..."
+            LIST_OUT=$(npx wrangler d1 list --json 2>&1) || LIST_OUT=""
+            echo "wrangler list output (first 500 chars): $(echo "$LIST_OUT" | head -c 500)"
+            DB_ID=$(echo "$LIST_OUT" | python3 -c "import json,sys
+try:
+    data=json.load(sys.stdin)
+    print(next((d['id'] for d in data if d.get('name')=='cyber-mokugyo'), ''))
+except Exception as e:
+    print('', file=sys.stderr); print(e, file=sys.stderr)" 2>/dev/null || true)
           fi
           if [ -z "$DB_ID" ]; then
-            echo "✗ 无法解析 D1 ID" >&2
-            echo "$CREATE_OUT" >&2
+            echo "::error::Failed to resolve a D1 ID for cyber-mokugyo"
+            echo "create output was:"
+            echo "$CREATE_OUT"
             exit 1
           fi
+          echo "D1 ID: $DB_ID"
           echo "db_id=$DB_ID" >> "$GITHUB_OUTPUT"
           sed -i.bak "s/database_id = \"REPLACE_AT_DEPLOY_TIME\"/database_id = \"$DB_ID\"/" wrangler.toml
           rm -f wrangler.toml.bak
