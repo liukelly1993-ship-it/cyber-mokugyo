@@ -27,7 +27,7 @@ if((path==='/api/register'||path==='/api/login')&&request.method==='POST'){
  await throttle(db,'auth-ip:'+ip,30,15*60000);await throttle(db,'auth-user:'+username,15,15*60000);
  if(path==='/api/register'){
   await throttle(db,'register:'+ip,5,3600000);
-  const nickname=typeof b.nickname==='string'?b.nickname.trim():'';if(nickname.length<1||nickname.length>16||/[\u0000-\u001f\u007f]/.test(nickname))throw new HttpError(400,'昵称请填写 1–16 个字符。');
+  const nickname=typeof b.nickname==='string'?b.nickname.trim():'';if(nickname.length<1||nickname.length>16||/[\u0000-\u001f\u007f]/.test(nickname))throw new HttpError(400,'游戏名请填写 1–16 个字符。');
   const existing=await query(db,'SELECT id FROM users WHERE username=?',username).first();if(existing)throw new HttpError(409,'这个账号已有人使用，换一个喜欢的名字吧。');
   const user={id:crypto.randomUUID()},now=Date.now(),hash=await bcrypt.hash(b.password,12);
   try{await query(db,'INSERT INTO users(id,username,nickname,password_hash,credit_at,created_at) VALUES (?,?,?,?,?,?)',user.id,username,nickname,hash,now,now).run();}catch(e){if(String(e.message).includes('UNIQUE'))throw new HttpError(409,'这个账号已有人使用，换一个名字吧。');throw e;}
