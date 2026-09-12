@@ -38,32 +38,7 @@ jobs:
 
       - name: Ensure D1 database exists
         id: d1
-        run: |
-          DB_ID=""
-          CREATE_OUT=$(npx wrangler d1 create cyber-mokugyo 2>&1) || CREATE_OUT=""
-          echo "wrangler create output: $CREATE_OUT"
-          DB_ID=$(printf '%s\n' "$CREATE_OUT" | grep -oE '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}' | head -1 || true)
-          if [ -z "$DB_ID" ]; then
-            echo "create didn't return an ID, listing existing databases..."
-            LIST_OUT=$(npx wrangler d1 list --json 2>&1) || LIST_OUT=""
-            echo "wrangler list output (first 500 chars): $(printf '%s' "$LIST_OUT" | head -c 500)"
-            DB_ID=$(printf '%s' "$LIST_OUT" | python3 -c "import json,sys
-try:
-    data=json.load(sys.stdin)
-    print(next((d['id'] for d in data if d.get('name')=='cyber-mokugyo'), ''))
-except Exception as e:
-    pass" 2>/dev/null || true)
-          fi
-          if [ -z "$DB_ID" ]; then
-            echo "::error::Failed to resolve a D1 ID for cyber-mokugyo"
-            echo "create output was:"
-            echo "$CREATE_OUT"
-            exit 1
-          fi
-          echo "D1 ID: $DB_ID"
-          echo "db_id=$DB_ID" >> "$GITHUB_OUTPUT"
-          sed -i.bak "s/database_id = \"REPLACE_AT_DEPLOY_TIME\"/database_id = \"$DB_ID\"/" wrangler.toml
-          rm -f wrangler.toml.bak
+        run: bash scripts/ci-d1.sh
 
       - name: Apply schema migrations
         run: npx wrangler d1 execute cyber-mokugyo --remote --file=drizzle/0000_amusing_kat_farrell.sql
@@ -73,34 +48,17 @@ except Exception as e:
 
       - name: Deploy Worker
         id: deploy
-        run: |
-          set -euo pipefail
-          DEPLOY_OUT=$(npx wrangler deploy 2>&1)
-          echo "$DEPLOY_OUT"
-          WORKER_URL=$(printf '%s\n' "$DEPLOY_OUT" \
-            | grep -oE 'https://[a-z0-9-]+\.workers\.dev' \
-            | head -1)
-          if [ -z "$WORKER_URL" ]; then
-            echo "✗ 无法解析 Worker URL" >&2
-            exit 1
-          fi
-          echo "worker_url=$WORKER_URL" >> "$GITHUB_OUTPUT"
+        run: bash scripts/ci-deploy.sh
 
       - name: Health check
-        run: |
-          set -euo pipefail
-          URL="${{ steps.deploy.outputs.worker_url }}/api/health"
-          echo "GET $URL"
-          RESP=$(curl -fsSL -H "Origin: https://liukelly1993-ship-it.github.io" "$URL")
-          echo "$RESP"
-          echo "$RESP" | grep -q '"ok":true'
+        run: URL="${{ steps.deploy.outputs.worker_url }}/api/health"; echo "GET $URL"; RESP=$(curl -fsSL -H "Origin: https://liukelly1993-ship-it.github.io" "$URL"); echo "$RESP"; echo "$RESP" | grep -q '"ok":true'
 
       - name: Notify deploy result
         if: always()
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            echo "✅ Worker deployed at ${{ steps.deploy.outputs.worker_url }}"
+            echo "Worker deployed at ${{ steps.deploy.outputs.worker_url }}"
           else
-            echo "❌ Deploy failed"
+            echo "Deploy failed"
             exit 1
           fi
