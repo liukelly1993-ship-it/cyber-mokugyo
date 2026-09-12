@@ -1,0 +1,35 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {readFileSync} from 'node:fs';
+import worker from '../src/worker.js';
+const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_keys=ON');db.exec(readFileSync(new URL('../drizzle/0000_amusing_kat_farrell.sql',import.meta.url),'utf8'));
+const wrap=(sql,args=[])=>({bind(...a){return wrap(sql,a);},async first(){return db.prepare(sql).get(...args)??null;},async all(){return{results:db.prepare(sql).all(...args)};},async run(){return{meta:db.prepare(sql).run(...args)};},sync(){const stmt=db.prepare(sql);if(stmt.columns().length)return{results:stmt.all(...args)};return{results:[],meta:stmt.run(...args)};}});
+const env={DB:{prepare:wrap,async batch(statements){db.exec('BEGIN');try{const results=statements.map(s=>s.sync());db.exec('COMMIT');return results;}catch(e){db.exec('ROLLBACK');throw e;}}}};
+async function call(path,data,token,origin='https://liukelly1993-ship-it.github.io'){const response=await worker.fetch(new Request('https://example.test/api/'+path,{method:data?'POST':'GET',headers:{Origin:origin,'CF-Connecting-IP':'127.0.0.1',...(data?{'Content-Type':'application/json'}:{}),...(token?{Authorization:'Bearer '+token}:{})},body:data?JSON.stringify(data):undefined}),env,{});return{status:response.status,data:await response.json(),headers:response.headers};}
+const event=(count)=>({id:Date.now()+'-'+crypto.randomUUID(),count});
+test('registration, two-user isolation, idempotency, rankings, auth and limits',async()=>{
+ assert.equal((await call('health')).status,200);
+ assert.equal((await call('leaderboard')).status,401);
+ assert.equal((await call('register',{username:'ab',password:'password123',nickname:'A'})).status,400);
+ const a=await call('register',{username:'tester_one',password:'test-password-a',nickname:'好友甲'});assert.equal(a.status,201);assert.equal(a.data.user.total,0);
+ const b=await call('register',{username:'tester_two',password:'test-password-b',nickname:'好友乙'});assert.equal(b.status,201);
+ const ah=a.data.token,bh=b.data.token;
+ assert.equal((await call('register',{username:'tester_one',password:'test-password-a',nickname:'同名'})).status,409);
+ assert.equal((await call('login',{username:'tester_one',password:'incorrect-pass'})).status,401);
+ const login=await call('login',{username:'TESTER_ONE',password:'test-password-a'});assert.equal(login.status,200);assert.equal(login.data.user.id,a.data.user.id);
+ const x=event(7);assert.equal((await call('taps',x,ah)).data.user.total,7);assert.equal((await call('taps',x,ah)).data.user.total,7);
+ assert.equal((await call('taps',{...x,count:8},ah)).status,409);assert.equal((await call('me',undefined,ah)).data.user.total,7);
+ assert.equal((await call('taps',event(12),bh)).data.user.total,12);
+ const rank=await call('leaderboard?period=today',undefined,ah);assert.equal(rank.data.rows[0].nickname,'好友乙');assert.equal(rank.data.me.rank,2);assert.equal(rank.data.rows[1].score,7);assert.ok(!JSON.stringify(rank.data).includes('password'));
+ assert.equal((await call('leaderboard?period=total',undefined,ah)).data.rows[0].score,12);
+ assert.equal((await call('taps',event(0),ah)).status,400);assert.equal((await call('taps',event(121),ah)).status,400);
+ assert.equal((await call('taps',{id:(Date.now()-3*86400000)+'-'+crypto.randomUUID(),count:5},ah)).status,422);
+ assert.equal((await call('me',undefined,'0'.repeat(64))).status,401);
+ assert.equal((await call('me',undefined,ah,'https://evil.example')).status,403);
+ assert.equal((await call('taps',event(120),ah)).status,200);assert.equal((await call('taps',event(120),ah)).status,429);
+ assert.equal((await call('logout',{},ah)).status,200);assert.equal((await call('me',undefined,ah)).status,401);assert.equal((await call('me',undefined,login.data.token)).status,200);
+ db.prepare('UPDATE sessions SET expires=0 WHERE user_id=?').run(b.data.user.id);assert.equal((await call('me',undefined,bh)).status,401);
+ assert.ok(!db.prepare('SELECT password_hash FROM users LIMIT 1').get().password_hash.includes('test-password'));
+ console.log('Verified real SQLite migrations and worker API: two accounts, auth, ranks, idempotency, validation, limits, session expiry.');
+});
