@@ -51,7 +51,12 @@ jobs:
         run: bash scripts/ci-deploy.sh
 
       - name: Health check
-        run: URL="${{ steps.deploy.outputs.worker_url }}/api/health"; echo "GET $URL"; RESP=$(curl -fsSL -H "Origin: https://liukelly1993-ship-it.github.io" "$URL"); echo "$RESP"; echo "$RESP" | grep -q '"ok":true'
+        run: |
+          URL="${{ steps.deploy.outputs.worker_url }}/api/health"
+          echo "GET $URL"
+          RESP=$(curl -fsSL -H "Origin: https://liukelly1993-ship-it.github.io" "$URL")
+          echo "$RESP"
+          echo "$RESP" | grep -qF ok:true
 
       - name: Notify deploy result
         if: always()
