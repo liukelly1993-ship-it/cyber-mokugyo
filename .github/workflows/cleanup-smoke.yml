@@ -34,10 +34,10 @@ jobs:
       - name: Delete smoke and test users and related rows
         run: |
           SQL="
-          DELETE FROM daily WHERE user_id IN (SELECT id FROM users WHERE username IN ('smoke1','sync_test'));
-          DELETE FROM events WHERE user_id IN (SELECT id FROM users WHERE username IN ('smoke1','sync_test'));
-          DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE username IN ('smoke1','sync_test'));
-          DELETE FROM users WHERE username IN ('smoke1','sync_test');
-          SELECT username, COUNT(*) AS n FROM users WHERE username IN ('smoke1','sync_test') GROUP BY username;
+          DELETE FROM daily WHERE user_id IN (SELECT id FROM users WHERE username IN ('smoke1','sync_test','e2e_check','e2e_sync'));
+          DELETE FROM events WHERE user_id IN (SELECT id FROM users WHERE username IN ('smoke1','sync_test','e2e_check','e2e_sync'));
+          DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE username IN ('smoke1','sync_test','e2e_check','e2e_sync'));
+          DELETE FROM users WHERE username IN ('smoke1','sync_test','e2e_check','e2e_sync');
+          SELECT username, COUNT(*) AS n FROM users WHERE username IN ('smoke1','sync_test','e2e_check','e2e_sync') GROUP BY username;
           "
           npx wrangler@3 d1 execute cyber-mokugyo --remote --command="$SQL"
